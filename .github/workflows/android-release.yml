@@ -1,0 +1,59 @@
+# GitHub Actions - Android Release CI/CD
+
+name: Android Release Build
+
+# 控制工作流的触发时机
+on:
+  push:
+    tags:
+      - 'v*.*.*' # 当一个形如 v1.0.0 的标签被推送时触发
+
+jobs:
+  build:
+    # 指定运行环境为最新的Ubuntu系统
+    runs-on: ubuntu-latest
+
+    steps:
+      # 第一步：检出代码
+      # 拉取你的仓库代码到工作环境中
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 第二步：设置Java环境
+      # 为后续的Gradle构建准备好Java 11环境
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          cache: gradle
+
+      # 第三步：让 gradlew 脚本可执行
+      # 在Linux/macOS环境下，需要给这个脚本添加执行权限
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 第四步：执行Gradle构建
+      # 运行 assembleDebug 命令来编译并打包Debug版本的APK
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
+
+      # 第五步：上传APK作为构建产物
+      # 将生成的APK文件上传，这样你可以在Actions页面下载它，也方便后续步骤使用
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sms-forwarder-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      # 第六步：创建Release并将APK附加到其中
+      # 这是最后一步，它会获取触发工作流的标签名，创建一个GitHub Release，
+      # 并将上一步中生成的APK文件作为附件上传上去。
+      - name: Create Release and Upload APK
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/debug/app-debug.apk
+          # 使用标签名作为Release的名称
+          name: Release ${{ github.ref_name }}
+          # 从标签名中自动生成Release说明
+          generate_release_notes: true
