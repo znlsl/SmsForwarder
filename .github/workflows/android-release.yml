@@ -13,6 +13,10 @@ jobs:
     # 指定运行环境为最新的Ubuntu系统
     runs-on: ubuntu-latest
 
+    # 为工作流授予创建Release所需的写入权限
+    permissions:
+      contents: write
+
     steps:
       # 第一步：检出代码
       # 拉取你的仓库代码到工作环境中
