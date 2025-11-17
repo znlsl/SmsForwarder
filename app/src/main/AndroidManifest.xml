@@ -16,9 +16,12 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- Android 13 (API 33) 及以上版本需要此权限来显示通知 -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- 允许程序写入外部存储，用于保存崩溃日志 (仅对 API 28 及以下版本有效) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"

@@ -16,7 +16,6 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.util.Properties;
 
@@ -149,8 +148,11 @@ public class EmailService extends Service {
     // 辅助方法，用于发送日志广播和打印Logcat
     private void log(String message) {
         Log.d(TAG, message);
-        Intent intent = new Intent(ACTION_UPDATE_LOG);
-        intent.putExtra(EXTRA_LOG_MESSAGE, message);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+        if (MainActivity.logHandler != null) {
+            // 必须使用全限定名，以避免和 javax.mail.Message 冲突
+            android.os.Message msg = MainActivity.logHandler.obtainMessage();
+            msg.obj = message;
+            MainActivity.logHandler.sendMessage(msg);
+        }
     }
 }

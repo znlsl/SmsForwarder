@@ -1,14 +1,15 @@
 package com.example.myapplication;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -19,8 +20,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -39,13 +40,26 @@ public class MainActivity extends AppCompatActivity {
     private ArrayAdapter<String> logAdapter;
     private ArrayList<String> logMessages;
 
-    private BroadcastReceiver logReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String message = intent.getStringExtra(EmailService.EXTRA_LOG_MESSAGE);
-            addLogMessage(message);
+    public static Handler logHandler;
+
+    private static class LogHandler extends Handler {
+        private final WeakReference<MainActivity> mActivity;
+
+        LogHandler(MainActivity activity) {
+            super(Looper.getMainLooper());
+            mActivity = new WeakReference<>(activity);
         }
-    };
+
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            MainActivity activity = mActivity.get();
+            if (activity != null) {
+                if (msg.obj instanceof String) {
+                    activity.addLogMessage((String) msg.obj);
+                }
+            }
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +79,9 @@ public class MainActivity extends AppCompatActivity {
         logMessages = new ArrayList<>();
         logAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, logMessages);
         lvLogs.setAdapter(logAdapter);
+
+        // 初始化Handler
+        logHandler = new LogHandler(this);
 
         // 加载配置
         loadSavedPreferences();
@@ -87,18 +104,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        // 注册广播接收器
-        LocalBroadcastManager.getInstance(this).registerReceiver(logReceiver,
-                new IntentFilter(EmailService.ACTION_UPDATE_LOG));
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // 注销广播接收器
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(logReceiver);
+    protected void onDestroy() {
+        super.onDestroy();
+        // 移除回调和消息，防止内存泄漏
+        logHandler.removeCallbacksAndMessages(null);
+        logHandler = null;
     }
 
     private void addLogMessage(String message) {
@@ -140,6 +150,13 @@ public class MainActivity extends AppCompatActivity {
         for (String permission : requiredPermissions) {
             if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
                 permissionsNeeded.add(permission);
+            }
+        }
+
+        // 仅在 Android 9 (API 28) 及以下版本才需要请求存储权限
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
             }
         }
 

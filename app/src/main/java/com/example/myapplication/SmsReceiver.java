@@ -6,9 +6,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
+import android.os.Message;
 import android.util.Log;
-
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 public class SmsReceiver extends BroadcastReceiver {
 
@@ -43,7 +42,12 @@ public class SmsReceiver extends BroadcastReceiver {
                     Intent serviceIntent = new Intent(context, EmailService.class);
                     serviceIntent.putExtra("sender", sender);
                     serviceIntent.putExtra("content", smsContent.toString());
-                    context.startService(serviceIntent); // 使用 startService 而不是 startForegroundService
+                    // 从 Android 8.0 (API 26) 开始，后台启动服务必须使用 startForegroundService
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent);
+                    } else {
+                        context.startService(serviceIntent);
+                    }
 
                 } catch (Exception e) {
                     log(context, "解析短信失败: " + e.getMessage());
@@ -56,8 +60,10 @@ public class SmsReceiver extends BroadcastReceiver {
     // 辅助方法，用于发送日志广播和打印Logcat
     private void log(Context context, String message) {
         Log.d(TAG, message);
-        Intent intent = new Intent(EmailService.ACTION_UPDATE_LOG);
-        intent.putExtra(EmailService.EXTRA_LOG_MESSAGE, message);
-        LocalBroadcastManager.getInstance(context).sendBroadcast(intent);
+        if (MainActivity.logHandler != null) {
+            Message msg = MainActivity.logHandler.obtainMessage();
+            msg.obj = message;
+            MainActivity.logHandler.sendMessage(msg);
+        }
     }
 }
