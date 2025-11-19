@@ -43,28 +43,13 @@
         android:layout_marginTop="16dp"
         android:text="保存配置"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp">
-
-        <Button
-            android:id="@+id/btn_start_service"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="启动服务"/>
-
-        <Button
-            android:id="@+id/btn_stop_service"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:text="停止服务"/>
-    </LinearLayout>
+        android:text="配置保存后，新短信将自动转发。"
+        android:textColor="#888888"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="8dp"/>
 
     <TextView
         android:layout_width="wrap_content"

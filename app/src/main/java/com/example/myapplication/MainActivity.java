@@ -2,7 +2,6 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -34,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String PREFS_NAME = "SmsForwarderPrefs";
 
     private EditText etSenderEmail, etSenderPassword, etReceiverEmail;
-    private Button btnSave, btnStartService, btnStopService;
+    private Button btnSave;
     private ListView lvLogs;
 
     private ArrayAdapter<String> logAdapter;
@@ -71,8 +70,6 @@ public class MainActivity extends AppCompatActivity {
         etSenderPassword = findViewById(R.id.et_sender_password);
         etReceiverEmail = findViewById(R.id.et_receiver_email);
         btnSave = findViewById(R.id.btn_save);
-        btnStartService = findViewById(R.id.btn_start_service);
-        btnStopService = findViewById(R.id.btn_stop_service);
         lvLogs = findViewById(R.id.lv_logs);
 
         // 初始化日志列表
@@ -89,26 +86,16 @@ public class MainActivity extends AppCompatActivity {
 
         // 设置按钮点击事件
         btnSave.setOnClickListener(v -> savePreferences());
-
-        btnStartService.setOnClickListener(v -> {
-            addLogMessage("正在尝试启动服务...");
-            Intent serviceIntent = new Intent(this, EmailService.class);
-            startForegroundService(serviceIntent);
-        });
-
-        btnStopService.setOnClickListener(v -> {
-            addLogMessage("正在尝试停止服务...");
-            Intent serviceIntent = new Intent(this, EmailService.class);
-            stopService(serviceIntent);
-        });
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
         // 移除回调和消息，防止内存泄漏
-        logHandler.removeCallbacksAndMessages(null);
-        logHandler = null;
+        if (logHandler != null) {
+            logHandler.removeCallbacksAndMessages(null);
+            logHandler = null;
+        }
     }
 
     private void addLogMessage(String message) {
@@ -137,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
         editor.putString("receiver_email", etReceiverEmail.getText().toString().trim());
         editor.apply();
         Toast.makeText(this, "配置已保存", Toast.LENGTH_SHORT).show();
-        addLogMessage("配置已保存。");
+        addLogMessage("配置已保存，等待新短信...");
     }
 
     private void checkAndRequestPermissions() {
@@ -170,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, permissionsNeeded.toArray(new String[0]), PERMISSIONS_REQUEST_CODE);
             addLogMessage("正在请求权限...");
         } else {
-            addLogMessage("所有必要权限已授予。");
+            addLogMessage("权限检测通过，服务已就绪。");
         }
     }
 
@@ -187,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (allGranted) {
-                addLogMessage("权限申请成功。");
+                addLogMessage("权限申请成功，服务已就绪。");
             } else {
                 addLogMessage("警告：部分权限被拒绝，功能可能无法正常使用。");
                 Toast.makeText(this, "部分权限被拒绝，功能可能无法正常使用", Toast.LENGTH_LONG).show();
